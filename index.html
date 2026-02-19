@@ -1,12 +1,288 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>느린아이</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#FDFCFA', 100: '#FAF7F2', 200: '#F3EDE4',
+                            300: '#E8DFD2', 400: '#B8AD9E', 500: '#8C8070',
+                            600: '#6B5F50', 700: '#4A4035', 800: '#2E261D',
+                        },
+                        app: {
+                            blue: '#6BADE8', 'blue-light': '#D9EDFC', 'blue-soft': '#EEF6FD',
+                            orange: '#F0A050', 'orange-light': '#FDE8C8', 'orange-soft': '#FFF6EB',
+                            green: '#5BC886', 'green-light': '#D4F5E0',
+                            red: '#F07070',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            margin: 0; padding: 0;
+            background: #F5F1EB;
+            min-height: 100dvh;
+            display: flex; justify-content: center; align-items: flex-start;
+        }
+
+        /* ── App Container ── */
+        .app {
+            width: 100%; max-width: 480px;
+            min-height: 100dvh;
+            background: white;
+            padding: 24px 20px;
+            padding-top: max(24px, env(safe-area-inset-top));
+            padding-bottom: max(24px, env(safe-area-inset-bottom));
+            display: flex; flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            body { align-items: center; padding: 32px; }
+            .app {
+                max-width: 560px;
+                min-height: auto;
+                border-radius: 32px;
+                box-shadow: 0 8px 48px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+                padding: 44px 40px;
+            }
+        }
+
+        /* ── 고르기 모드 dots ── */
+        .dot { border-radius: 50%; }
+        .dot-sm { width: 16px; height: 16px; }
+        .dot-md { width: 20px; height: 20px; }
+        @media (min-width: 768px) {
+            .dot-sm { width: 20px; height: 20px; }
+            .dot-md { width: 24px; height: 24px; }
+        }
+
+        /* ── 쌓기 모드: 소스 dot ── */
+        .source-dot {
+            width: 28px; height: 28px; border-radius: 50%;
+            cursor: grab; touch-action: none; user-select: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, opacity 0.15s;
+        }
+        .source-dot:active { cursor: grabbing; transform: scale(1.12); }
+        @media (min-width: 768px) {
+            .source-dot { width: 32px; height: 32px; }
+        }
+
+        /* ── 쌓기 모드: 존 dot ── */
+        .zone-dot {
+            width: 24px; height: 24px; border-radius: 50%;
+            cursor: pointer; user-select: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            transition: transform 0.12s, opacity 0.15s;
+        }
+        .zone-dot:hover { opacity: 0.6; transform: scale(0.85); }
+        @media (min-width: 768px) {
+            .zone-dot { width: 28px; height: 28px; }
+        }
+
+        /* ── 드롭 존 ── */
+        .drop-zone {
+            min-height: 80px; border: 2.5px dashed;
+            border-radius: 16px; padding: 8px;
+            display: grid; grid-template-columns: repeat(5, 24px); gap: 4px;
+            align-content: start; justify-content: center;
+            transition: background 0.18s, border-color 0.18s;
+        }
+        .drop-zone.blue-zone { border-color: #B8D9F5; background: #F5FAFF; }
+        .drop-zone.orange-zone { border-color: #F5D5A8; background: #FFFAF2; }
+        .drop-zone.drag-over-blue { background: #D9EDFC !important; border-color: #6BADE8 !important; border-style: solid !important; }
+        .drop-zone.drag-over-orange { background: #FDE8C8 !important; border-color: #F0A050 !important; border-style: solid !important; }
+        @media (min-width: 768px) {
+            .drop-zone {
+                min-height: 90px; padding: 10px;
+                grid-template-columns: repeat(5, 28px); gap: 5px;
+            }
+        }
+
+        /* ── 드래그 플로팅 ── */
+        .floating-circle {
+            position: fixed; z-index: 9999; pointer-events: none;
+            width: 32px; height: 32px; border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        /* ── 버튼 공통 ── */
+        .btn-option {
+            border: 2.5px solid #E8E2DA;
+            background: white;
+            border-radius: 16px;
+            font-weight: 700;
+            color: #4A4035;
+            transition: transform 0.1s, border-color 0.15s, background 0.15s;
+            cursor: pointer;
+            user-select: none;
+        }
+        .btn-option:active:not(:disabled) { transform: scale(0.95); }
+        .btn-option:disabled { cursor: default; }
+        .btn-option.correct {
+            background: #D4F5E0 !important; border-color: #5BC886 !important; color: #1A7A3A !important;
+        }
+        .btn-option.wrong {
+            background: #FDE8E8 !important; border-color: #F07070 !important; color: #B91C1C !important; opacity: 0.5;
+        }
+
+        /* ── 쌓기 정답 선택 ── */
+        .ans-btn {
+            border: 2.5px solid #E8E2DA; background: white;
+            border-radius: 14px; font-weight: 700; color: #4A4035;
+            transition: transform 0.1s, border-color 0.15s, background 0.15s;
+            cursor: pointer; user-select: none;
+        }
+        .ans-btn:active:not(:disabled) { transform: scale(0.95); }
+        .ans-selected {
+            background: #D4F5E0 !important; border-color: #5BC886 !important; color: #1A7A3A !important;
+        }
+
+        /* ── 모드 카드 ── */
+        .mode-card {
+            transition: transform 0.12s, box-shadow 0.12s;
+            cursor: pointer; user-select: none;
+        }
+        .mode-card:active { transform: scale(0.97); }
+        .mode-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+
+        /* ── 채우기 셀 ── */
+        .fill-cell {
+            width: 48px; height: 48px; border-radius: 50%;
+            border: 2.5px dashed #D8D2C8; background: #FDFCFA;
+            cursor: pointer; user-select: none;
+            transition: all 0.18s;
+        }
+        .fill-cell:active:not(.locked) { transform: scale(0.9); }
+        .fill-cell.blue-filled {
+            border: 2.5px solid #6BADE8; background: #6BADE8;
+            box-shadow: 0 2px 8px rgba(107,173,232,0.25);
+        }
+        .fill-cell.orange-filled {
+            border: 2.5px solid #F0A050; background: #F0A050;
+            box-shadow: 0 2px 8px rgba(240,160,80,0.25);
+        }
+        .fill-cell.locked { cursor: default; opacity: 0.85; }
+        @media (min-width: 768px) {
+            .fill-cell { width: 56px; height: 56px; }
+        }
+
+        /* ── 프로그레스 바 ── */
+        .progress-track {
+            height: 8px; border-radius: 99px;
+            background: #F0ECE6; overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%; border-radius: 99px;
+            background: linear-gradient(90deg, #6BADE8, #5BC886);
+            transition: width 0.5s ease;
+        }
+
+        /* ── 수식 숫자 ── */
+        .eq-num {
+            font-size: 3rem; font-weight: 900; line-height: 1;
+        }
+        .eq-op {
+            font-size: 2rem; font-weight: 600; color: #C8C0B4; line-height: 1;
+        }
+        @media (min-width: 768px) {
+            .eq-num { font-size: 3.75rem; }
+            .eq-op { font-size: 2.5rem; }
+        }
+
+        /* ── 충동방지 토글 ── */
+        .toggle-track {
+            width: 48px; height: 28px;
+            border-radius: 99px; position: relative;
+            background: #E0DAD0; transition: background 0.2s;
+            cursor: pointer; flex-shrink: 0;
+        }
+        .toggle-track.on { background: #5BC886; }
+        .toggle-knob {
+            width: 22px; height: 22px;
+            border-radius: 50%; background: white;
+            position: absolute; top: 3px; left: 3px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+            transition: transform 0.2s;
+        }
+        .toggle-track.on .toggle-knob { transform: translateX(20px); }
+
+        /* ── 충동방지 초 선택 ── */
+        .imp-sec {
+            flex: 1; padding: 8px 0;
+            font-size: 0.75rem; font-weight: 600;
+            border-radius: 10px; border: 2px solid #E8E2DA;
+            background: white; color: #8C8070;
+            cursor: pointer; transition: all 0.15s;
+            text-align: center;
+        }
+        .imp-sec.active {
+            border-color: #5BC886; background: #D4F5E0; color: #1A7A3A;
+        }
+
+        /* ── 페이드 인 ── */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+
+        /* ── 홈 버튼 ── */
+        .btn-home {
+            width: 36px; height: 36px; border-radius: 10px;
+            border: 2px solid #E8E2DA; background: white;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.15s;
+            font-size: 1rem; color: #8C8070;
+        }
+        .btn-home:active { background: #F5F1EB; }
+        @media (min-width: 768px) {
+            .btn-home { width: 40px; height: 40px; }
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to Slow Math Circle</h1>
-    <p>Current Date and Time (UTC): 2026-02-19 10:55:18</p>
-</body>
-</html>
+
+<div class="app">
+
+    <!-- ══════════════ 시작 화면 ══════════════ -->
+    <div id="start-view" class="flex flex-col flex-1">
+
+        <!-- 헤더 -->
+        <div class="text-center pt-4 pb-6">
+            <!-- 거북이 캐릭터 -->
+            <div class="inline-block mb-3">
+                <svg viewBox="0 0 120 100" width="120" height="100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 뒷다리 -->
+                    <ellipse cx="30" cy="72" rx="10" ry="6" fill="#F2DC8C" stroke="#3A9B6A" stroke-width="2" transform="rotate(-20 30 72)"/>
+                    <ellipse cx="78" cy="76" rx="10" ry="6" fill="#F2DC8C" stroke="#3A9B6A" stroke-width="2" transform="rotate(15 78 76)"/>
+                    <!-- 앞다리 -->
+                    <ellipse cx="28" cy="54" rx="9" ry="5.5" fill="#F2DC8C" stroke="#3A9B6A" stroke-width="2" transform="rotate(-10 28 54)"/>
+                    <!-- 꼬리 -->
+                    <path d="M18 60 L10 55" stroke="#F2DC8C" stroke-width="4" stroke-linecap="round"/>
+                    <!-- 몸통 -->
+                    <ellipse cx="55" cy="58" rx="35" ry="20" fill="#F5E6C8" stroke="#3A9B6A" stroke-width="2"/>
+                    <!-- 등껍질 -->
+                    <ellipse cx="52" cy="42" rx="32" ry="28" fill="#7EDCAA" stroke="#3A9B6A" stroke-width="2.5"/>
+                    <!-- 등껍질 패턴 -->
+                    <path d="M52 18 L42 32 L42 48 L52 58 L62 48 L62 32 Z" fill="none" stroke="#3A9B6A" stroke-width="1.3" opacity="0.35"/>
+                    <line x1="42" y1="32" x2="24" y2="38" stroke="#3A9B6A" stroke-width="1.3" opacity="0.35"/>
+                    <line x1="62" y1="32" x2="80" y2="38" stroke="#3A9B6A" stroke-width="1.3" opacity="0.35"/>
+                    <line x1="42" y1="48" x2="26" y2="56" stroke="#3A9B6A" stroke-width="1.3" opacity="0.35"/>
