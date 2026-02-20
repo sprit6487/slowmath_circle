@@ -441,12 +441,12 @@
             </div>
             <div id="impulse-details" class="hidden">
                 <div class="impulse-mode-options">
-                    <button class="impulse-mode-btn selected" onclick="setImpulseMode('hide')" data-mode="hide">
+                    <button class="impulse-mode-btn" onclick="setImpulseMode('hide')" data-mode="hide">
                         <span class="impulse-mode-icon">🙈</span>
                         <span class="impulse-mode-label">보기 숨기기</span>
                         <span class="impulse-mode-desc">N초 후 보기가 나타나요</span>
                     </button>
-                    <button class="impulse-mode-btn" onclick="setImpulseMode('lock')" data-mode="lock">
+                    <button class="impulse-mode-btn selected" onclick="setImpulseMode('lock')" data-mode="lock">
                         <span class="impulse-mode-icon">🔒</span>
                         <span class="impulse-mode-label">선택 잠금</span>
                         <span class="impulse-mode-desc">N초 동안 선택할 수 없어요</span>
@@ -455,9 +455,9 @@
                 <div class="flex gap-1">
                     <button onclick="setImpulseDelay(1)" class="imp-sec">1초</button>
                     <button onclick="setImpulseDelay(2)" class="imp-sec">2초</button>
-                    <button onclick="setImpulseDelay(3)" class="imp-sec active">3초</button>
+                    <button onclick="setImpulseDelay(3)" class="imp-sec">3초</button>
                     <button onclick="setImpulseDelay(4)" class="imp-sec">4초</button>
-                    <button onclick="setImpulseDelay(5)" class="imp-sec">5초</button>
+                    <button onclick="setImpulseDelay(5)" class="imp-sec active">5초</button>
                     <button onclick="setImpulseDelay(6)" class="imp-sec">6초</button>
                     <button onclick="setImpulseDelay(7)" class="imp-sec">7초</button>
                     <button onclick="setImpulseDelay(8)" class="imp-sec">8초</button>
@@ -669,8 +669,8 @@
     let questionList = [];
     let ttsEnabled = true;
     let impulsePrevention = false;
-    let impulseDelay = 3;
-    let impulseMode = 'hide'; // 'hide' = 보기 숨기기, 'lock' = 선택 잠금
+    let impulseDelay = 5;
+    let impulseMode = 'lock'; // 'hide' = 보기 숨기기, 'lock' = 선택 잠금
     let impulseTimer = null;
     let gameMode = 'select';
     let maxNum = 5;
