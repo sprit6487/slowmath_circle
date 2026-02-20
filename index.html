@@ -87,11 +87,11 @@
         /* ── 쌓기 모드: 존 dot ── */
         .zone-dot {
             width: 24px; height: 24px; border-radius: 50%;
-            cursor: pointer; user-select: none;
+            cursor: grab; touch-action: none; user-select: none;
             box-shadow: 0 1px 4px rgba(0,0,0,0.08);
             transition: transform 0.12s, opacity 0.15s;
         }
-        .zone-dot:hover { opacity: 0.6; transform: scale(0.85); }
+        .zone-dot:active { cursor: grabbing; transform: scale(1.12); }
         @media (min-width: 768px) {
             .zone-dot { width: 28px; height: 28px; }
         }
@@ -180,6 +180,9 @@
             box-shadow: 0 2px 8px rgba(240,160,80,0.25);
         }
         .fill-cell.locked { cursor: default; opacity: 0.85; }
+        .fill-cell.blue-filled, .fill-cell.orange-filled { cursor: grab; touch-action: none; }
+        .fill-cell.blue-filled:active, .fill-cell.orange-filled:active { cursor: grabbing; }
+        .fill-cell.fill-drag-over { border-color: #5BC886 !important; border-style: solid !important; background: #D4F5E0 !important; }
         @media (min-width: 768px) {
             .fill-cell { width: 56px; height: 56px; }
         }
@@ -558,7 +561,7 @@
         </div>
 
         <!-- 안내 -->
-        <p class="text-center text-xs mb-3" style="color:#D0C8BC;">끌어다 색깔에 맞는 칸에 넣어요 · 탭하면 제거</p>
+        <p class="text-center text-xs mb-3" style="color:#D0C8BC;">끌어다 색깔에 맞는 칸에 넣어요 · 끌어서 제거</p>
 
         <!-- 소스 트레이 -->
         <div class="rounded-2xl py-3 px-3 mb-4 flex items-center justify-center gap-3 border-2" style="background:#FDFCFA; border-color:#F0ECE6;">
@@ -569,13 +572,6 @@
 
         <!-- 정답 선택지 -->
         <div id="answer-opts" class="grid grid-cols-4 gap-2 mb-3"></div>
-
-        <!-- 확인 버튼 -->
-        <button id="check-btn" onclick="checkDrag()" disabled
-                class="w-full py-4 rounded-2xl font-bold text-lg transition mb-2"
-                style="background:#E8E2DA; color:#B8AD9E;">
-            확인하기
-        </button>
 
         <!-- 피드백 -->
         <div id="dfeedback" class="text-center h-8 text-base font-bold"></div>
@@ -610,12 +606,12 @@
 
         <!-- 색 선택 -->
         <div id="fill-color-picker" class="flex justify-center gap-5 mb-5">
-            <button onclick="pickFillColor('blue')" id="pick-blue-btn"
-                    class="w-14 h-14 rounded-full border-4 transition hover:scale-110 active:scale-95"
-                    style="background:#6BADE8; border-color:#D9EDFC; box-shadow:0 2px 8px rgba(107,173,232,0.2);"></button>
-            <button onclick="pickFillColor('orange')" id="pick-orange-btn"
-                    class="w-14 h-14 rounded-full border-4 transition hover:scale-110 active:scale-95"
-                    style="background:#F0A050; border-color:#FDE8C8; box-shadow:0 2px 8px rgba(240,160,80,0.2);"></button>
+            <button id="pick-blue-btn"
+                    class="w-14 h-14 rounded-full border-4 transition active:scale-95"
+                    style="background:#6BADE8; border-color:#D9EDFC; box-shadow:0 2px 8px rgba(107,173,232,0.2); touch-action:none; cursor:grab;"></button>
+            <button id="pick-orange-btn"
+                    class="w-14 h-14 rounded-full border-4 transition active:scale-95"
+                    style="background:#F0A050; border-color:#FDE8C8; box-shadow:0 2px 8px rgba(240,160,80,0.2); touch-action:none; cursor:grab;"></button>
         </div>
 
         <!-- 2×5 그리드 -->
@@ -685,6 +681,11 @@
     // 정답 선택 상태
     let selectedAnswer = null;
     let selectedAnswerBtn = null;
+
+    // 드래그 타입
+    let dragType = null; // 'source-to-zone', 'zone-to-remove', 'fill-add', 'fill-remove'
+    let dragZoneDot = null;
+    let dragFillCellIndex = -1;
 
     // 채우기 상태
     let fillPhase = 'fill';
@@ -849,7 +850,6 @@
         document.getElementById('blue-drop').innerHTML   = '';
         document.getElementById('orange-drop').innerHTML = '';
         updateZoneCounts();
-        setCheckBtn(false);
         buildSourceTray();
         buildAnswerOptions();
     }
@@ -871,15 +871,38 @@
 
     function selectAnswerChoice(v, btn) {
         if (busy) return;
-        if (selectedAnswerBtn) selectedAnswerBtn.classList.remove('ans-selected');
-        selectedAnswer = v;
-        selectedAnswerBtn = btn;
-        btn.classList.add('ans-selected');
-        const dans = document.getElementById('dans');
-        dans.textContent = v;
-        dans.style.color = '#8C8070';
-        setCheckBtn(true);
-        clearDFeedback();
+        tries++;
+        const fb = document.getElementById('dfeedback');
+        const blueOk = blueCount === n1;
+        const orangeOk = orangeCount === n2;
+        const ansOk = v === ans;
+
+        if (blueOk && orangeOk && ansOk) {
+            busy = true;
+            if (tries === 1) { correct++; document.getElementById('dscore').textContent = correct; }
+            document.querySelectorAll('#answer-opts button').forEach(b => b.disabled = true);
+            document.querySelectorAll('#blue-drop .zone-dot, #orange-drop .zone-dot')
+                .forEach(d => d.style.pointerEvents = 'none');
+            btn.classList.add('ans-selected');
+            const dans = document.getElementById('dans');
+            dans.textContent = ans;
+            dans.style.color = '#5BC886';
+            fb.textContent = `정답이에요! 🎉 모두 ${ans}개예요`;
+            fb.style.color = '#5BC886';
+            fb.className = 'text-center h-8 text-base font-bold';
+            speak(`정답이에요. 모두 ${ans}개예요.`);
+            setTimeout(() => { if (qNum < 10) { qNum++; newDragQuestion(); } else showResult(); }, 1600);
+        } else {
+            const errors = [];
+            if (!blueOk) errors.push('파란 동그라미 개수');
+            if (!orangeOk) errors.push('주황 동그라미 개수');
+            if (!ansOk) errors.push('선택한 답');
+            fb.textContent = errors.join(' · ') + '를 다시 확인해요';
+            fb.style.color = '#F07070';
+            fb.className = 'text-center h-8 text-sm font-medium';
+            speak('다시 해봐요.');
+            if (!ansOk) { btn.disabled = true; btn.style.opacity = '0.4'; }
+        }
     }
 
     function buildSourceTray() {
@@ -899,12 +922,14 @@
         d.style.background = color === 'blue' ? '#6BADE8' : '#F0A050';
         d.addEventListener('mousedown', e => {
             e.preventDefault();
+            dragType = 'source-to-zone';
             floatingSourceEl = d;
             d.style.visibility = 'hidden';
             beginDrag(e.clientX, e.clientY, color);
         });
         d.addEventListener('touchstart', e => {
             e.preventDefault();
+            dragType = 'source-to-zone';
             floatingSourceEl = d;
             d.style.visibility = 'hidden';
             const t = e.touches[0];
@@ -928,7 +953,11 @@
         if (!floatingEl) return;
         floatingEl.style.left = x + 'px';
         floatingEl.style.top  = y + 'px';
-        updateZoneHighlight(x, y);
+        if (dragType === 'source-to-zone' || dragType === 'zone-to-remove') {
+            updateZoneHighlight(x, y);
+        } else if (dragType === 'fill-add' || dragType === 'fill-remove') {
+            updateFillCellHighlight(x, y);
+        }
     }
 
     function endDrag(x, y) {
@@ -936,20 +965,56 @@
         const color = floatingColor;
         floatingEl.remove(); floatingEl = null; floatingColor = null;
         clearZoneHighlight();
+        clearFillCellHighlight();
 
-        const zoneId = color === 'blue' ? 'blue-drop' : 'orange-drop';
-        const zone = document.getElementById(zoneId);
-        const rect = zone.getBoundingClientRect();
-
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-            floatingSourceEl = null;
-            addToZone(color);
-        } else {
-            if (floatingSourceEl) {
-                floatingSourceEl.style.visibility = '';
+        if (dragType === 'source-to-zone') {
+            const zoneId = color === 'blue' ? 'blue-drop' : 'orange-drop';
+            const zone = document.getElementById(zoneId);
+            const rect = zone.getBoundingClientRect();
+            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
                 floatingSourceEl = null;
+                addToZone(color);
+            } else {
+                if (floatingSourceEl) {
+                    floatingSourceEl.style.visibility = '';
+                    floatingSourceEl = null;
+                }
             }
+        } else if (dragType === 'zone-to-remove') {
+            const zoneId = color === 'blue' ? 'blue-drop' : 'orange-drop';
+            const zone = document.getElementById(zoneId);
+            const rect = zone.getBoundingClientRect();
+            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                dragZoneDot.style.visibility = '';
+            } else {
+                dragZoneDot.remove();
+                if (color === 'blue') blueCount = Math.max(0, blueCount - 1);
+                else orangeCount = Math.max(0, orangeCount - 1);
+                const sourceId = color === 'blue' ? 'blue-source' : 'orange-source';
+                const sourceEl = document.getElementById(sourceId);
+                const hiddenDot = Array.from(sourceEl.children).find(c => c.style.visibility === 'hidden');
+                if (hiddenDot) hiddenDot.style.visibility = '';
+                else sourceEl.appendChild(makeSourceDot(color));
+                updateZoneCounts();
+                clearDFeedback();
+            }
+            dragZoneDot = null;
+        } else if (dragType === 'fill-add') {
+            const idx = getFillCellAtPoint(x, y);
+            if (idx >= 0 && fillPhase === 'fill') {
+                fillCells[idx] = color;
+                updateFillGridVisuals();
+            }
+        } else if (dragType === 'fill-remove') {
+            const idx = getFillCellAtPoint(x, y);
+            if (idx >= 0) {
+                fillCells[idx] = color;
+            }
+            updateFillGridVisuals();
+            dragFillCellIndex = -1;
         }
+
+        dragType = null;
     }
 
     function updateZoneHighlight(x, y) {
@@ -980,30 +1045,26 @@
         const d = document.createElement('span');
         d.className = 'zone-dot';
         d.style.background = color === 'blue' ? '#6BADE8' : '#F0A050';
-        d.onclick = () => removeFromZone(color, d);
+        d.addEventListener('mousedown', e => {
+            if (busy) return;
+            e.preventDefault();
+            dragType = 'zone-to-remove';
+            dragZoneDot = d;
+            d.style.visibility = 'hidden';
+            beginDrag(e.clientX, e.clientY, color);
+        });
+        d.addEventListener('touchstart', e => {
+            if (busy) return;
+            e.preventDefault();
+            dragType = 'zone-to-remove';
+            dragZoneDot = d;
+            d.style.visibility = 'hidden';
+            beginDrag(e.touches[0].clientX, e.touches[0].clientY, color);
+        }, { passive: false });
         zone.appendChild(d);
         if (color === 'blue') blueCount++;
         else orangeCount++;
         updateZoneCounts();
-        setCheckBtn(blueCount > 0 || orangeCount > 0);
-        clearDFeedback();
-    }
-
-    function removeFromZone(color, el) {
-        if (busy) return;
-        el.remove();
-        if (color === 'blue') blueCount = Math.max(0, blueCount - 1);
-        else orangeCount = Math.max(0, orangeCount - 1);
-        const sourceId = color === 'blue' ? 'blue-source' : 'orange-source';
-        const sourceEl = document.getElementById(sourceId);
-        const hiddenDot = Array.from(sourceEl.children).find(c => c.style.visibility === 'hidden');
-        if (hiddenDot) {
-            hiddenDot.style.visibility = '';
-        } else {
-            sourceEl.appendChild(makeSourceDot(color));
-        }
-        updateZoneCounts();
-        setCheckBtn(blueCount > 0 || orangeCount > 0);
         clearDFeedback();
     }
 
@@ -1012,66 +1073,11 @@
         document.getElementById('orange-count').textContent = `${orangeCount}개`;
     }
 
-    function setCheckBtn(enabled) {
-        const btn = document.getElementById('check-btn');
-        btn.disabled = !enabled;
-        if (enabled) {
-            btn.style.background = '#4A4035';
-            btn.style.color = 'white';
-        } else {
-            btn.style.background = '#E8E2DA';
-            btn.style.color = '#B8AD9E';
-        }
-    }
-
     function clearDFeedback() {
         const fb = document.getElementById('dfeedback');
         if (fb.textContent && !fb.textContent.includes('정답')) {
             fb.textContent = '';
             fb.className = 'text-center h-8 text-base font-bold';
-        }
-    }
-
-    function checkDrag() {
-        if (busy) return;
-        const fb = document.getElementById('dfeedback');
-
-        if (selectedAnswer === null) {
-            fb.textContent = '답을 먼저 선택해요!';
-            fb.style.color = '#B8AD9E';
-            fb.className = 'text-center h-8 text-sm font-medium';
-            return;
-        }
-
-        tries++;
-        const blueOk   = blueCount === n1;
-        const orangeOk = orangeCount === n2;
-        const ansOk    = selectedAnswer === ans;
-
-        if (blueOk && orangeOk && ansOk) {
-            busy = true;
-            if (tries === 1) { correct++; document.getElementById('dscore').textContent = correct; }
-            document.getElementById('check-btn').disabled = true;
-            document.querySelectorAll('#answer-opts button').forEach(b => b.disabled = true);
-            document.querySelectorAll('#blue-drop .zone-dot, #orange-drop .zone-dot')
-                .forEach(d => d.style.pointerEvents = 'none');
-            const dans = document.getElementById('dans');
-            dans.textContent = ans;
-            dans.style.color = '#5BC886';
-            fb.textContent = `정답이에요! 🎉 모두 ${ans}개예요`;
-            fb.style.color = '#5BC886';
-            fb.className = 'text-center h-8 text-base font-bold';
-            speak(`정답이에요. 모두 ${ans}개예요.`);
-            setTimeout(() => { if (qNum < 10) { qNum++; newDragQuestion(); } else showResult(); }, 1600);
-        } else {
-            const errors = [];
-            if (!blueOk)   errors.push('파란 동그라미 개수');
-            if (!orangeOk) errors.push('주황 동그라미 개수');
-            if (!ansOk)    errors.push('선택한 답');
-            fb.textContent = errors.join(' · ') + '를 다시 확인해요';
-            fb.style.color = '#F07070';
-            fb.className = 'text-center h-8 text-sm font-medium';
-            speak('다시 해봐요.');
         }
     }
 
@@ -1101,15 +1107,51 @@
         showFillAnswerOptions();
     }
 
+    function getFillCellAtPoint(x, y) {
+        const cells = document.querySelectorAll('#fill-grid .fill-cell');
+        for (let i = 0; i < cells.length; i++) {
+            const rect = cells[i].getBoundingClientRect();
+            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return i;
+        }
+        return -1;
+    }
+
+    function updateFillCellHighlight(x, y) {
+        clearFillCellHighlight();
+        const idx = getFillCellAtPoint(x, y);
+        if (idx >= 0) {
+            const cells = document.querySelectorAll('#fill-grid .fill-cell');
+            cells[idx].classList.add('fill-drag-over');
+        }
+    }
+
+    function clearFillCellHighlight() {
+        document.querySelectorAll('#fill-grid .fill-cell.fill-drag-over').forEach(c => c.classList.remove('fill-drag-over'));
+    }
+
     function renderFillGrid() {
         const grid = document.getElementById('fill-grid');
         grid.innerHTML = '';
         for (let i = 0; i < 10; i++) {
             const cell = document.createElement('div');
             cell.className = 'fill-cell';
-            cell.onclick = () => fillCellClick(i);
+            cell.addEventListener('mousedown', e => fillCellDragStart(e, i));
+            cell.addEventListener('touchstart', e => fillCellDragStart(e, i), { passive: false });
             grid.appendChild(cell);
         }
+    }
+
+    function fillCellDragStart(e, index) {
+        if (busy || fillPhase !== 'fill') return;
+        if (!fillCells[index]) return;
+        e.preventDefault();
+        dragType = 'fill-remove';
+        dragFillCellIndex = index;
+        const color = fillCells[index];
+        fillCells[index] = null;
+        updateFillGridVisuals();
+        const pt = e.touches ? e.touches[0] : e;
+        beginDrag(pt.clientX, pt.clientY, color);
     }
 
     function updateFillGridVisuals() {
@@ -1123,47 +1165,10 @@
         });
     }
 
-    function fillCellClick(index) {
-        if (busy) return;
-        if (fillPhase !== 'fill' || !activeColor) return;
-
-        if (fillCells[index] === activeColor) {
-            fillCells[index] = null;
-        } else {
-            fillCells[index] = activeColor;
-        }
-        updateFillGridVisuals();
-    }
-
-    function pickFillColor(color) {
-        if (fillPhase !== 'fill') return;
-        activeColor = color;
-        updateFillColorPicker();
-    }
-
     function updateFillColorPicker() {
         const picker = document.getElementById('fill-color-picker');
-        const blueBtn = document.getElementById('pick-blue-btn');
-        const orangeBtn = document.getElementById('pick-orange-btn');
-
-        blueBtn.style.boxShadow = '0 2px 8px rgba(107,173,232,0.2)';
-        blueBtn.style.transform = '';
-        blueBtn.style.opacity = '1';
-        orangeBtn.style.boxShadow = '0 2px 8px rgba(240,160,80,0.2)';
-        orangeBtn.style.transform = '';
-        orangeBtn.style.opacity = '1';
-
         if (fillPhase === 'fill') {
             picker.classList.remove('hidden');
-            if (activeColor === 'blue') {
-                blueBtn.style.boxShadow = '0 0 0 4px rgba(107,173,232,0.35)';
-                blueBtn.style.transform = 'scale(1.15)';
-                orangeBtn.style.opacity = '0.4';
-            } else if (activeColor === 'orange') {
-                orangeBtn.style.boxShadow = '0 0 0 4px rgba(240,160,80,0.35)';
-                orangeBtn.style.transform = 'scale(1.15)';
-                blueBtn.style.opacity = '0.4';
-            }
         } else {
             picker.classList.add('hidden');
         }
@@ -1349,6 +1354,23 @@
         u.lang = 'ko-KR'; u.rate = 0.9;
         setTimeout(() => window.speechSynthesis.speak(u), 50);
     }
+
+    // 채우기 색상 드래그 설정
+    ['blue', 'orange'].forEach(color => {
+        const btn = document.getElementById(color === 'blue' ? 'pick-blue-btn' : 'pick-orange-btn');
+        btn.addEventListener('mousedown', e => {
+            if (busy || fillPhase !== 'fill') return;
+            e.preventDefault();
+            dragType = 'fill-add';
+            beginDrag(e.clientX, e.clientY, color);
+        });
+        btn.addEventListener('touchstart', e => {
+            if (busy || fillPhase !== 'fill') return;
+            e.preventDefault();
+            dragType = 'fill-add';
+            beginDrag(e.touches[0].clientX, e.touches[0].clientY, color);
+        }, { passive: false });
+    });
 
     if (window.speechSynthesis) {
         speechSynthesis.getVoices();
