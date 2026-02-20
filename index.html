@@ -1248,6 +1248,7 @@
         document.getElementById('start-view').classList.add('hidden');
         document.getElementById('result-view').classList.add('hidden');
         if (window.speechSynthesis) speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+        setTimeout(() => speak('천천히 생각하고 풀어보세요.'), 100);
         if (mode === 'select') {
             document.getElementById('score').textContent = 0;
             document.getElementById('play-view').classList.remove('hidden');
