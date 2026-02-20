@@ -410,8 +410,22 @@
             </div>
         </div>
 
-        <!-- 충동방지 (고르기 전용) -->
+        <!-- 음성 설정 -->
         <div class="mt-6 pt-5" style="border-top: 1.5px solid #F0ECE6;">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <p class="text-sm font-semibold" style="color:#4A4035;">음성</p>
+                    <p class="text-xs mt-0.5" style="color:#B8AD9E;">정답/오답 음성 안내</p>
+                </div>
+                <button id="tts-toggle" onclick="toggleTTS()" role="switch" aria-checked="true"
+                        class="toggle-track on">
+                    <span id="tts-knob" class="toggle-knob"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 충동방지 (고르기 전용) -->
+        <div class="pt-5" style="border-top: 1.5px solid #F0ECE6;">
             <div class="flex items-center justify-between mb-3">
                 <div>
                     <p class="text-sm font-semibold" style="color:#4A4035;">
@@ -653,6 +667,7 @@
     // ── 상태 ──
     let qNum = 1, correct = 0, n1, n2, ans, startTime, busy = false, tries = 0;
     let questionList = [];
+    let ttsEnabled = true;
     let impulsePrevention = false;
     let impulseDelay = 3;
     let impulseMode = 'hide'; // 'hide' = 보기 숨기기, 'lock' = 선택 잠금
@@ -1277,6 +1292,14 @@
         document.getElementById('start-view').classList.remove('hidden');
     }
 
+    function toggleTTS() {
+        ttsEnabled = !ttsEnabled;
+        const tog = document.getElementById('tts-toggle');
+        tog.classList.toggle('on', ttsEnabled);
+        tog.setAttribute('aria-checked', ttsEnabled);
+        if (!ttsEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
     function toggleImpulsePrevention() {
         impulsePrevention = !impulsePrevention;
         const toggle = document.getElementById('impulse-toggle');
@@ -1320,7 +1343,7 @@
     }
 
     function speak(text) {
-        if (!window.speechSynthesis) return;
+        if (!ttsEnabled || !window.speechSynthesis) return;
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'ko-KR'; u.rate = 0.9;
