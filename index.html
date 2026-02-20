@@ -288,6 +288,47 @@
         @media (min-width: 768px) {
             .btn-home { width: 40px; height: 40px; }
         }
+
+        /* ── 잠금 토글 ── */
+        .lock-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 2.5px solid #E8E2DA;
+            background: white;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #8C8070;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .lock-toggle:active { transform: scale(0.95); }
+        .lock-toggle.locked {
+            border-color: #5BC886;
+            background: #D4F5E0;
+            color: #1A7A3A;
+        }
+        .drag-locked .zone-dot {
+            pointer-events: none !important;
+            cursor: default !important;
+        }
+        .drag-locked .zone-dot:hover { opacity: 1; transform: none; }
+        .drag-locked .source-dot {
+            pointer-events: none !important;
+            opacity: 0.3;
+        }
+        .fill-locked .fill-cell {
+            pointer-events: none !important;
+            cursor: default !important;
+        }
+        .fill-locked .fill-cell:active { transform: none; }
+        .fill-locked #fill-color-picker {
+            pointer-events: none;
+            opacity: 0.3;
+        }
     </style>
 </head>
 <body>
@@ -557,8 +598,11 @@
             </div>
         </div>
 
-        <!-- 안내 -->
-        <p class="text-center text-xs mb-3" style="color:#D0C8BC;">끌어다 색깔에 맞는 칸에 넣어요 · 탭하면 제거</p>
+        <!-- 안내 + 잠금 -->
+        <div class="flex items-center justify-center gap-3 mb-3">
+            <p class="text-center text-xs" style="color:#D0C8BC;">끌어다 색깔에 맞는 칸에 넣어요 · 탭하면 제거</p>
+            <button id="drag-lock-btn" onclick="toggleDragLock()" class="lock-toggle">🔓 잠금</button>
+        </div>
 
         <!-- 소스 트레이 -->
         <div class="rounded-2xl py-3 px-3 mb-4 flex items-center justify-center gap-3 border-2" style="background:#FDFCFA; border-color:#F0ECE6;">
@@ -569,13 +613,6 @@
 
         <!-- 정답 선택지 -->
         <div id="answer-opts" class="grid grid-cols-4 gap-2 mb-3"></div>
-
-        <!-- 확인 버튼 -->
-        <button id="check-btn" onclick="checkDrag()" disabled
-                class="w-full py-4 rounded-2xl font-bold text-lg transition mb-2"
-                style="background:#E8E2DA; color:#B8AD9E;">
-            확인하기
-        </button>
 
         <!-- 피드백 -->
         <div id="dfeedback" class="text-center h-8 text-base font-bold"></div>
@@ -616,6 +653,11 @@
             <button onclick="pickFillColor('orange')" id="pick-orange-btn"
                     class="w-14 h-14 rounded-full border-4 transition hover:scale-110 active:scale-95"
                     style="background:#F0A050; border-color:#FDE8C8; box-shadow:0 2px 8px rgba(240,160,80,0.2);"></button>
+        </div>
+
+        <!-- 잠금 -->
+        <div class="flex justify-center mb-3">
+            <button id="fill-lock-btn" onclick="toggleFillLock()" class="lock-toggle">🔓 잠금</button>
         </div>
 
         <!-- 2×5 그리드 -->
@@ -685,6 +727,10 @@
     // 정답 선택 상태
     let selectedAnswer = null;
     let selectedAnswerBtn = null;
+
+    // 잠금 상태
+    let dragLocked = false;
+    let fillLocked = false;
 
     // 채우기 상태
     let fillPhase = 'fill';
@@ -828,6 +874,7 @@
     function newDragQuestion() {
         busy = false; tries = 0;
         blueCount = 0; orangeCount = 0;
+        resetDragLock();
         [n1, n2] = questionList[qNum - 1];
         ans = n1 + n2;
 
@@ -838,9 +885,6 @@
         dans.textContent = '?';
         dans.style.color = '#D8D2C8';
 
-        selectedAnswer = null;
-        selectedAnswerBtn = null;
-
         document.getElementById('dq-label').textContent  = `문제 ${qNum} / 10`;
         document.getElementById('dprogress').style.width = `${qNum / 10 * 100}%`;
         document.getElementById('dfeedback').textContent = '';
@@ -849,7 +893,6 @@
         document.getElementById('blue-drop').innerHTML   = '';
         document.getElementById('orange-drop').innerHTML = '';
         updateZoneCounts();
-        setCheckBtn(false);
         buildSourceTray();
         buildAnswerOptions();
     }
@@ -871,15 +914,44 @@
 
     function selectAnswerChoice(v, btn) {
         if (busy) return;
-        if (selectedAnswerBtn) selectedAnswerBtn.classList.remove('ans-selected');
-        selectedAnswer = v;
-        selectedAnswerBtn = btn;
-        btn.classList.add('ans-selected');
-        const dans = document.getElementById('dans');
-        dans.textContent = v;
-        dans.style.color = '#8C8070';
-        setCheckBtn(true);
-        clearDFeedback();
+        tries++;
+        const fb = document.getElementById('dfeedback');
+        const blueOk = blueCount === n1;
+        const orangeOk = orangeCount === n2;
+        const ansOk = v === ans;
+
+        if (blueOk && orangeOk && ansOk) {
+            busy = true;
+            if (tries === 1) { correct++; document.getElementById('dscore').textContent = correct; }
+            document.querySelectorAll('#answer-opts button').forEach(b => b.disabled = true);
+            document.querySelectorAll('#blue-drop .zone-dot, #orange-drop .zone-dot')
+                .forEach(d => d.style.pointerEvents = 'none');
+            btn.classList.add('ans-selected');
+            const dans = document.getElementById('dans');
+            dans.textContent = ans;
+            dans.style.color = '#5BC886';
+            fb.textContent = `정답이에요! 🎉 모두 ${ans}개예요`;
+            fb.style.color = '#5BC886';
+            fb.className = 'text-center h-8 text-base font-bold';
+            speak(`정답이에요. 모두 ${ans}개예요.`);
+            setTimeout(() => { if (qNum < 10) { qNum++; newDragQuestion(); } else showResult(); }, 1600);
+        } else {
+            const errors = [];
+            if (!blueOk) errors.push('파란 동그라미 개수');
+            if (!orangeOk) errors.push('주황 동그라미 개수');
+            if (!ansOk) {
+                btn.disabled = true;
+                btn.style.opacity = '0.4';
+            }
+            if (errors.length > 0) {
+                fb.textContent = errors.join(' · ') + '를 다시 확인해요';
+            } else {
+                fb.textContent = '다른 답을 골라봐요';
+            }
+            fb.style.color = '#F07070';
+            fb.className = 'text-center h-8 text-sm font-medium';
+            speak('다시 해봐요.');
+        }
     }
 
     function buildSourceTray() {
@@ -913,7 +985,55 @@
         return d;
     }
 
+    function toggleDragLock() {
+        dragLocked = !dragLocked;
+        const btn = document.getElementById('drag-lock-btn');
+        const view = document.getElementById('drag-view');
+        if (dragLocked) {
+            btn.classList.add('locked');
+            btn.textContent = '🔒 잠금됨';
+            view.classList.add('drag-locked');
+        } else {
+            btn.classList.remove('locked');
+            btn.textContent = '🔓 잠금';
+            view.classList.remove('drag-locked');
+        }
+    }
+
+    function toggleFillLock() {
+        fillLocked = !fillLocked;
+        const btn = document.getElementById('fill-lock-btn');
+        const view = document.getElementById('fill-view');
+        if (fillLocked) {
+            btn.classList.add('locked');
+            btn.textContent = '🔒 잠금됨';
+            view.classList.add('fill-locked');
+        } else {
+            btn.classList.remove('locked');
+            btn.textContent = '🔓 잠금';
+            view.classList.remove('fill-locked');
+        }
+    }
+
+    function resetDragLock() {
+        dragLocked = false;
+        const btn = document.getElementById('drag-lock-btn');
+        if (btn) { btn.classList.remove('locked'); btn.textContent = '🔓 잠금'; }
+        document.getElementById('drag-view').classList.remove('drag-locked');
+    }
+
+    function resetFillLock() {
+        fillLocked = false;
+        const btn = document.getElementById('fill-lock-btn');
+        if (btn) { btn.classList.remove('locked'); btn.textContent = '🔓 잠금'; }
+        document.getElementById('fill-view').classList.remove('fill-locked');
+    }
+
     function beginDrag(x, y, color) {
+        if (dragLocked) {
+            if (floatingSourceEl) { floatingSourceEl.style.visibility = ''; floatingSourceEl = null; }
+            return;
+        }
         floatingColor = color;
         floatingEl = document.createElement('div');
         floatingEl.className = 'floating-circle';
@@ -975,7 +1095,7 @@
     }
 
     function addToZone(color) {
-        if (busy) return;
+        if (busy || dragLocked) return;
         const zone = document.getElementById(color === 'blue' ? 'blue-drop' : 'orange-drop');
         const d = document.createElement('span');
         d.className = 'zone-dot';
@@ -985,12 +1105,11 @@
         if (color === 'blue') blueCount++;
         else orangeCount++;
         updateZoneCounts();
-        setCheckBtn(blueCount > 0 || orangeCount > 0);
         clearDFeedback();
     }
 
     function removeFromZone(color, el) {
-        if (busy) return;
+        if (busy || dragLocked) return;
         el.remove();
         if (color === 'blue') blueCount = Math.max(0, blueCount - 1);
         else orangeCount = Math.max(0, orangeCount - 1);
@@ -1003,25 +1122,12 @@
             sourceEl.appendChild(makeSourceDot(color));
         }
         updateZoneCounts();
-        setCheckBtn(blueCount > 0 || orangeCount > 0);
         clearDFeedback();
     }
 
     function updateZoneCounts() {
         document.getElementById('blue-count').textContent   = `${blueCount}개`;
         document.getElementById('orange-count').textContent = `${orangeCount}개`;
-    }
-
-    function setCheckBtn(enabled) {
-        const btn = document.getElementById('check-btn');
-        btn.disabled = !enabled;
-        if (enabled) {
-            btn.style.background = '#4A4035';
-            btn.style.color = 'white';
-        } else {
-            btn.style.background = '#E8E2DA';
-            btn.style.color = '#B8AD9E';
-        }
     }
 
     function clearDFeedback() {
@@ -1032,54 +1138,12 @@
         }
     }
 
-    function checkDrag() {
-        if (busy) return;
-        const fb = document.getElementById('dfeedback');
-
-        if (selectedAnswer === null) {
-            fb.textContent = '답을 먼저 선택해요!';
-            fb.style.color = '#B8AD9E';
-            fb.className = 'text-center h-8 text-sm font-medium';
-            return;
-        }
-
-        tries++;
-        const blueOk   = blueCount === n1;
-        const orangeOk = orangeCount === n2;
-        const ansOk    = selectedAnswer === ans;
-
-        if (blueOk && orangeOk && ansOk) {
-            busy = true;
-            if (tries === 1) { correct++; document.getElementById('dscore').textContent = correct; }
-            document.getElementById('check-btn').disabled = true;
-            document.querySelectorAll('#answer-opts button').forEach(b => b.disabled = true);
-            document.querySelectorAll('#blue-drop .zone-dot, #orange-drop .zone-dot')
-                .forEach(d => d.style.pointerEvents = 'none');
-            const dans = document.getElementById('dans');
-            dans.textContent = ans;
-            dans.style.color = '#5BC886';
-            fb.textContent = `정답이에요! 🎉 모두 ${ans}개예요`;
-            fb.style.color = '#5BC886';
-            fb.className = 'text-center h-8 text-base font-bold';
-            speak(`정답이에요. 모두 ${ans}개예요.`);
-            setTimeout(() => { if (qNum < 10) { qNum++; newDragQuestion(); } else showResult(); }, 1600);
-        } else {
-            const errors = [];
-            if (!blueOk)   errors.push('파란 동그라미 개수');
-            if (!orangeOk) errors.push('주황 동그라미 개수');
-            if (!ansOk)    errors.push('선택한 답');
-            fb.textContent = errors.join(' · ') + '를 다시 확인해요';
-            fb.style.color = '#F07070';
-            fb.className = 'text-center h-8 text-sm font-medium';
-            speak('다시 해봐요.');
-        }
-    }
-
     // ── 채우기 모드 ──
     function newFillQuestion() {
         busy = false; tries = 0;
         fillPhase = 'fill';
         activeColor = null;
+        resetFillLock();
         fillCells = new Array(10).fill(null);
 
         [n1, n2] = questionList[qNum - 1];
@@ -1124,7 +1188,7 @@
     }
 
     function fillCellClick(index) {
-        if (busy) return;
+        if (busy || fillLocked) return;
         if (fillPhase !== 'fill' || !activeColor) return;
 
         if (fillCells[index] === activeColor) {
@@ -1136,7 +1200,7 @@
     }
 
     function pickFillColor(color) {
-        if (fillPhase !== 'fill') return;
+        if (fillPhase !== 'fill' || fillLocked) return;
         activeColor = color;
         updateFillColorPicker();
     }
@@ -1285,6 +1349,8 @@
             el.classList.remove('chips-hidden', 'chips-locked');
         });
         if (floatingEl) { floatingEl.remove(); floatingEl = null; }
+        resetDragLock();
+        resetFillLock();
         document.getElementById('result-view').classList.add('hidden');
         document.getElementById('play-view').classList.add('hidden');
         document.getElementById('drag-view').classList.add('hidden');
