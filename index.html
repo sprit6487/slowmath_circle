@@ -260,6 +260,28 @@
         .impulse-mode-desc { font-size: 0.65rem; color: #B8AD9E; margin-top: 1px; }
         .chips-hidden { visibility: hidden; }
         .chips-locked { pointer-events: none; opacity: 0.45; }
+
+        .reveal-btn {
+            display: block;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto 12px;
+            padding: 14px 0;
+            border-radius: 14px;
+            border: 2px solid #C4AA82;
+            background: #FAF5EE;
+            color: #7B6545;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .reveal-btn:active {
+            background: #F0E6D6;
+            transform: scale(0.98);
+        }
         .delay-countdown {
             text-align: center;
             font-size: 1.5rem; font-weight: 900;
@@ -452,19 +474,19 @@
                         충동방지
                         <span class="text-xs font-normal ml-1" style="color:#B8AD9E;">고르기 모드</span>
                     </p>
-                    <p class="text-xs mt-0.5" style="color:#B8AD9E;">선택지가 <span id="impulse-label">꺼짐</span></p>
+                    <p class="text-xs mt-0.5" style="color:#B8AD9E;">생각할 시간을 줘요</p>
                 </div>
-                <button id="impulse-toggle" onclick="toggleImpulsePrevention()" role="switch" aria-checked="false"
-                        class="toggle-track">
+                <button id="impulse-toggle" onclick="toggleImpulsePrevention()" role="switch" aria-checked="true"
+                        class="toggle-track on">
                     <span id="impulse-knob" class="toggle-knob"></span>
                 </button>
             </div>
-            <div id="impulse-details" class="hidden">
+            <div id="impulse-details">
                 <div class="impulse-mode-options">
                     <button class="impulse-mode-btn" onclick="setImpulseMode('hide')" data-mode="hide">
-                        <span class="impulse-mode-icon">🙈</span>
-                        <span class="impulse-mode-label">보기 숨기기</span>
-                        <span class="impulse-mode-desc">N초 후 보기가 나타나요</span>
+                        <span class="impulse-mode-icon">👀</span>
+                        <span class="impulse-mode-label">보기 확인</span>
+                        <span class="impulse-mode-desc">버튼을 누르면 보기가 나타나요</span>
                     </button>
                     <button class="impulse-mode-btn selected" onclick="setImpulseMode('lock')" data-mode="lock">
                         <span class="impulse-mode-icon">🔒</span>
@@ -682,9 +704,9 @@
     let qNum = 1, correct = 0, n1, n2, ans, startTime, busy = false, tries = 0;
     let questionList = [];
     let ttsEnabled = true;
-    let impulsePrevention = false;
+    let impulsePrevention = true;
     let impulseDelay = 5;
-    let impulseMode = 'lock'; // 'hide' = 보기 숨기기, 'lock' = 선택 잠금
+    let impulseMode = 'lock'; // 'hide' = 보기 확인, 'lock' = 선택 잠금
     let impulseTimer = null;
     let gameMode = 'select';
     let maxNum = 5;
@@ -749,6 +771,8 @@
 
     function newQuestion() {
         if (impulseTimer) { clearInterval(impulseTimer); impulseTimer = null; }
+        const oldReveal = document.getElementById('revealBtn');
+        if (oldReveal) oldReveal.remove();
         busy = false; tries = 0;
         [n1, n2] = questionList[qNum - 1];
         ans = n1 + n2;
@@ -780,38 +804,40 @@
         });
 
         if (impulsePrevention) {
-            const isHide = impulseMode === 'hide';
             const optionsEl = document.getElementById('options');
-            if (isHide) {
+            if (impulseMode === 'hide') {
                 optionsEl.classList.add('chips-hidden');
+                const revealBtn = document.createElement('button');
+                revealBtn.className = 'reveal-btn';
+                revealBtn.id = 'revealBtn';
+                revealBtn.textContent = '보기 확인';
+                revealBtn.addEventListener('click', () => {
+                    optionsEl.classList.remove('chips-hidden');
+                    revealBtn.remove();
+                });
+                optionsEl.parentNode.insertBefore(revealBtn, optionsEl);
             } else {
                 const btns = optionsEl.querySelectorAll('button');
                 btns.forEach(b => { b.disabled = true; });
                 optionsEl.classList.add('chips-locked');
-            }
-            let countdown = impulseDelay;
-            const fb = document.getElementById('feedback');
-            fb.textContent = isHide
-                ? `${countdown}초 후 보기가 나와요`
-                : `${countdown}초 동안 생각해 보세요`;
-            fb.style.color = '#B8AD9E';
-            fb.className = 'text-center h-8 text-sm font-medium';
-            impulseTimer = setInterval(() => {
-                countdown--;
-                if (countdown > 0) {
-                    fb.textContent = isHide
-                        ? `${countdown}초 후 보기가 나와요`
-                        : `${countdown}초 동안 생각해 보세요`;
-                } else {
-                    clearInterval(impulseTimer); impulseTimer = null;
-                    optionsEl.classList.remove('chips-hidden', 'chips-locked');
-                    if (!isHide) {
+                let countdown = impulseDelay;
+                const fb = document.getElementById('feedback');
+                fb.textContent = `${countdown}초 동안 생각해 보세요`;
+                fb.style.color = '#B8AD9E';
+                fb.className = 'text-center h-8 text-sm font-medium';
+                impulseTimer = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        fb.textContent = `${countdown}초 동안 생각해 보세요`;
+                    } else {
+                        clearInterval(impulseTimer); impulseTimer = null;
+                        optionsEl.classList.remove('chips-locked');
                         optionsEl.querySelectorAll('button').forEach(b => { b.disabled = false; });
+                        fb.textContent = '';
+                        fb.className = 'text-center h-8 text-base font-bold';
                     }
-                    fb.textContent = '';
-                    fb.className = 'text-center h-8 text-base font-bold';
-                }
-            }, 1000);
+                }, 1000);
+            }
         }
     }
 
@@ -836,6 +862,8 @@
         if (v === ans) {
             busy = true;
             if (impulseTimer) { clearInterval(impulseTimer); impulseTimer = null; }
+            const revBtn = document.getElementById('revealBtn');
+            if (revBtn) revBtn.remove();
             document.getElementById('options').classList.remove('chips-hidden', 'chips-locked');
             if (tries === 1) { correct++; document.getElementById('score').textContent = correct; }
             document.querySelectorAll('#options button').forEach(b => {
@@ -1321,6 +1349,8 @@
 
     function resetGame() {
         if (impulseTimer) { clearInterval(impulseTimer); impulseTimer = null; }
+        const oldReveal = document.getElementById('revealBtn');
+        if (oldReveal) oldReveal.remove();
         document.querySelectorAll('.chips-hidden, .chips-locked').forEach(el => {
             el.classList.remove('chips-hidden', 'chips-locked');
         });
@@ -1344,18 +1374,14 @@
         impulsePrevention = !impulsePrevention;
         const toggle = document.getElementById('impulse-toggle');
         const details = document.getElementById('impulse-details');
-        const label  = document.getElementById('impulse-label');
         if (impulsePrevention) {
             toggle.classList.add('on');
             toggle.setAttribute('aria-checked', 'true');
             details.classList.remove('hidden');
-            label.textContent = `${impulseDelay}초 후 활성화돼요`;
-            highlightImpulseBtn();
         } else {
             toggle.classList.remove('on');
             toggle.setAttribute('aria-checked', 'false');
             details.classList.add('hidden');
-            label.textContent = '꺼짐';
         }
     }
 
@@ -1368,7 +1394,6 @@
 
     function setImpulseDelay(sec) {
         impulseDelay = sec;
-        document.getElementById('impulse-label').textContent = `${sec}초 후 활성화돼요`;
         highlightImpulseBtn();
     }
 
