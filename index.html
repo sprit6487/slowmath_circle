@@ -204,10 +204,9 @@
         .fill-anim { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; }
         .fill-anim .fa-cell { width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed #D8D2C8; position: relative; }
         .fill-anim .fa-fill { position: absolute; top: -1.5px; left: -1.5px; right: -1.5px; bottom: -1.5px; border-radius: 50%; opacity: 0; transform: scale(0); }
-        .fill-anim .fc1 { background: #6BADE8; animation: fillPop 6s ease infinite 0.2s; }
-        .fill-anim .fc2 { background: #6BADE8; animation: fillPop 6s ease infinite 0.5s; }
-        .fill-anim .fa-op { font-size: 0.6rem; font-weight: 700; color: #C8C0B4; opacity: 0; animation: pikFade 6s ease infinite 0.3s; }
-        .fill-anim .fc3 { background: #F0A050; animation: fillPop 6s ease infinite 0.8s; }
+        .fill-anim .fc1 { background: #6BADE8; animation: fillPop 6s ease infinite 0.3s; }
+        .fill-anim .fc2 { background: #6BADE8; animation: fillPop 6s ease infinite 0.7s; }
+        .fill-anim .fc3 { background: #F0A050; animation: fillPop 6s ease infinite 1.1s; }
         @keyframes fillPop { 0%,8%{opacity:0;transform:scale(0)} 16%{opacity:1;transform:scale(1.15)} 20%,70%{opacity:1;transform:scale(1)} 80%,100%{opacity:0;transform:scale(0)} }
 
         /* ── 채우기 셀 ── */
@@ -622,8 +621,9 @@
                     <div class="fill-anim">
                         <div class="fa-cell"><div class="fa-fill fc1"></div></div>
                         <div class="fa-cell"><div class="fa-fill fc2"></div></div>
-                        <span class="fa-op">+</span>
                         <div class="fa-cell"><div class="fa-fill fc3"></div></div>
+                        <div class="fa-cell"></div>
+                        <div class="fa-cell"></div>
                     </div>
                     <span class="text-sm font-semibold" style="color:#6B5F50;">채우기</span>
                     <span class="text-xs" style="color:#B8AD9E;">칸에 동그라미 채우기</span>
