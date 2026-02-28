@@ -163,6 +163,53 @@
         .mode-card:active { transform: scale(0.97); }
         .mode-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
 
+        /* ── 모드 아이콘 애니메이션 ── */
+
+        /* 고르기: ●● + ● = ?→3 (6초 사이클) */
+        .pick-anim { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; }
+        .pick-anim .pa-dot { width: 11px; height: 11px; border-radius: 50%; opacity: 0; transform: scale(0); }
+        .pick-anim .pa-dot.blue { background: #6BADE8; }
+        .pick-anim .pa-dot.orange { background: #F0A050; }
+        .pick-anim .b1 { animation: pikDot 6s ease infinite 0.1s; }
+        .pick-anim .b2 { animation: pikDot 6s ease infinite 0.25s; }
+        .pick-anim .o1 { animation: pikDot 6s ease infinite 0.55s; }
+        .pick-anim .pa-op { font-size: 0.7rem; font-weight: 700; color: #C8C0B4; opacity: 0; animation: pikFade 6s ease infinite 0.4s; }
+        .pick-anim .pa-ans { position: relative; width: 14px; height: 20px; }
+        .pick-anim .pa-q, .pick-anim .pa-n { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.85rem; }
+        .pick-anim .pa-q { color: #D8D2C8; animation: pikQ 6s ease infinite; }
+        .pick-anim .pa-n { color: #5BC886; animation: pikN 6s ease infinite; }
+        @keyframes pikDot { 0%,5%{opacity:0;transform:scale(0)} 12%{opacity:1;transform:scale(1.3)} 16%,75%{opacity:1;transform:scale(1)} 83%,100%{opacity:0;transform:scale(0)} }
+        @keyframes pikFade { 0%,8%{opacity:0} 16%,75%{opacity:1} 83%,100%{opacity:0} }
+        @keyframes pikQ { 0%,38%{opacity:1} 48%,75%{opacity:0} 85%,100%{opacity:1} }
+        @keyframes pikN { 0%,38%{opacity:0;transform:scale(0)} 48%{opacity:1;transform:scale(1.4)} 53%,75%{opacity:1;transform:scale(1)} 85%,100%{opacity:0;transform:scale(0)} }
+
+        /* 쌓기: 소스 동그라미 → 드롭 존 (6초 사이클) */
+        .stack-anim { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
+        .stack-anim .sa-src { display: flex; gap: 3px; }
+        .stack-anim .sa-dot { width: 11px; height: 11px; border-radius: 50%; }
+        .stack-anim .sa-dot.blue { background: #6BADE8; animation: stkSrcB 6s ease infinite; }
+        .stack-anim .sa-dot.orange { background: #F0A050; animation: stkSrcO 6s ease infinite; }
+        .stack-anim .sa-arrow { font-size: 0.75rem; color: #C8C0B4; opacity: 0; animation: stkArrow 6s ease infinite; }
+        .stack-anim .sa-zone { width: 30px; height: 24px; border: 1.5px dashed #D8D2C8; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 3px; }
+        .stack-anim .sa-placed { width: 10px; height: 10px; border-radius: 50%; opacity: 0; transform: scale(0); }
+        .stack-anim .sa-placed.blue { background: #6BADE8; animation: stkPlcB 6s ease infinite; }
+        .stack-anim .sa-placed.orange { background: #F0A050; animation: stkPlcO 6s ease infinite; }
+        @keyframes stkSrcB { 0%,5%{opacity:1;transform:scale(1)} 15%,75%{opacity:0.2;transform:scale(0.5)} 85%,100%{opacity:1;transform:scale(1)} }
+        @keyframes stkSrcO { 0%,30%{opacity:1;transform:scale(1)} 42%,75%{opacity:0.2;transform:scale(0.5)} 85%,100%{opacity:1;transform:scale(1)} }
+        @keyframes stkPlcB { 0%,10%{opacity:0;transform:scale(0)} 18%{opacity:1;transform:scale(1.3)} 22%,75%{opacity:1;transform:scale(1)} 85%,100%{opacity:0;transform:scale(0)} }
+        @keyframes stkPlcO { 0%,36%{opacity:0;transform:scale(0)} 44%{opacity:1;transform:scale(1.3)} 48%,75%{opacity:1;transform:scale(1)} 85%,100%{opacity:0;transform:scale(0)} }
+        @keyframes stkArrow { 0%,5%{opacity:0} 10%,75%{opacity:1} 85%,100%{opacity:0} }
+
+        /* 채우기: 빈 원 → 색 채워지는 원 (6초 사이클) */
+        .fill-anim { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; }
+        .fill-anim .fa-cell { width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed #D8D2C8; position: relative; }
+        .fill-anim .fa-fill { position: absolute; top: -1.5px; left: -1.5px; right: -1.5px; bottom: -1.5px; border-radius: 50%; opacity: 0; transform: scale(0); }
+        .fill-anim .fc1 { background: #6BADE8; animation: fillPop 6s ease infinite 0.2s; }
+        .fill-anim .fc2 { background: #6BADE8; animation: fillPop 6s ease infinite 0.5s; }
+        .fill-anim .fa-op { font-size: 0.6rem; font-weight: 700; color: #C8C0B4; opacity: 0; animation: pikFade 6s ease infinite 0.3s; }
+        .fill-anim .fc3 { background: #F0A050; animation: fillPop 6s ease infinite 0.8s; }
+        @keyframes fillPop { 0%,8%{opacity:0;transform:scale(0)} 16%{opacity:1;transform:scale(1.15)} 20%,70%{opacity:1;transform:scale(1)} 80%,100%{opacity:0;transform:scale(0)} }
+
         /* ── 채우기 셀 ── */
         .fill-cell {
             width: 48px; height: 48px; border-radius: 50%;
@@ -513,7 +560,14 @@
             <!-- 고르기 모드 -->
             <div>
                 <div class="flex items-center gap-2 mb-2 px-1">
-                    <span class="text-base">👆</span>
+                    <div class="pick-anim">
+                        <div class="pa-dot blue b1"></div>
+                        <div class="pa-dot blue b2"></div>
+                        <span class="pa-op">+</span>
+                        <div class="pa-dot orange o1"></div>
+                        <span class="pa-op">=</span>
+                        <div class="pa-ans"><span class="pa-q">?</span><span class="pa-n">3</span></div>
+                    </div>
                     <span class="text-sm font-semibold" style="color:#6B5F50;">고르기</span>
                     <span class="text-xs" style="color:#B8AD9E;">동그라미 세고 답 고르기</span>
                 </div>
@@ -534,13 +588,17 @@
             <!-- 쌓기 모드 -->
             <div>
                 <div class="flex items-center gap-2 mb-2 px-1">
-                    <span style="vertical-align:middle;">
-                        <svg width="18" height="18" viewBox="0 0 36 36" style="display:inline-block;vertical-align:middle;">
-                            <rect x="2" y="20" width="14" height="14" rx="3" fill="#6BADE8"/>
-                            <rect x="20" y="20" width="14" height="14" rx="3" fill="#F0A050"/>
-                            <rect x="11" y="4" width="14" height="14" rx="3" fill="#5BC886"/>
-                        </svg>
-                    </span>
+                    <div class="stack-anim">
+                        <div class="sa-src">
+                            <div class="sa-dot blue"></div>
+                            <div class="sa-dot orange"></div>
+                        </div>
+                        <span class="sa-arrow">→</span>
+                        <div class="sa-zone">
+                            <div class="sa-placed blue"></div>
+                            <div class="sa-placed orange"></div>
+                        </div>
+                    </div>
                     <span class="text-sm font-semibold" style="color:#6B5F50;">쌓기</span>
                     <span class="text-xs" style="color:#B8AD9E;">동그라미 끌어다 놓기</span>
                 </div>
@@ -561,7 +619,12 @@
             <!-- 채우기 모드 -->
             <div>
                 <div class="flex items-center gap-2 mb-2 px-1">
-                    <span class="text-base">🔵🟠</span>
+                    <div class="fill-anim">
+                        <div class="fa-cell"><div class="fa-fill fc1"></div></div>
+                        <div class="fa-cell"><div class="fa-fill fc2"></div></div>
+                        <span class="fa-op">+</span>
+                        <div class="fa-cell"><div class="fa-fill fc3"></div></div>
+                    </div>
                     <span class="text-sm font-semibold" style="color:#6B5F50;">채우기</span>
                     <span class="text-xs" style="color:#B8AD9E;">칸에 동그라미 채우기</span>
                 </div>
