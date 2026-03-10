@@ -451,6 +451,25 @@
             transition: background 0.15s;
         }
         .logout-btn:hover { background: #F5F1EB; }
+
+        /* ── 오답노트 ── */
+        .wrong-notes-btn { width: 100%; padding: 14px 0; border-radius: 14px; border: 2.5px solid #F07070; background: #FFF5F5; color: #F07070; font-family: 'Noto Sans KR', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 10px; transition: transform .1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .wrong-notes-btn:active { transform: scale(.97); }
+        .wrong-notes-btn .badge { background: #F07070; color: white; border-radius: 50%; min-width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; }
+        .wn-view { display: none; flex-direction: column; align-items: center; padding: 24px 20px; }
+        .wn-view.active { display: flex; }
+        .wn-header { text-align: center; margin-bottom: 20px; }
+        .wn-header h2 { font-size: 1.25rem; font-weight: 900; color: #4A4035; margin: 0 0 4px; }
+        .wn-header p { font-size: .85rem; color: #B8AD9E; margin: 0; }
+        .wn-list { width: 100%; max-width: 400px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
+        .wn-chip { padding: 8px 16px; border-radius: 10px; background: #FFF5F5; border: 1.5px solid #F07070; font-size: .9rem; font-weight: 700; color: #F07070; }
+        .wn-empty { color: #B8AD9E; font-size: .9rem; margin: 40px 0; }
+        .wn-actions { display: flex; gap: 10px; width: 100%; max-width: 320px; }
+        .wn-actions button { flex: 1; padding: 13px 0; border-radius: 12px; font-family: 'Noto Sans KR', sans-serif; font-size: .9rem; font-weight: 700; cursor: pointer; transition: transform .1s; }
+        .wn-actions button:active { transform: scale(.97); }
+        .wn-btn-back { border: 2.5px solid #E8E2DA; background: white; color: #8C8070; }
+        .wn-btn-start { border: none; background: #F07070; color: white; box-shadow: 0 2px 8px rgba(240,112,112,.3); }
+        .wn-btn-clear { border: 1.5px solid #E8E2DA; background: white; color: #B8AD9E; padding: 8px 16px; border-radius: 8px; font-size: .75rem; font-weight: 600; cursor: pointer; margin-top: 12px; font-family: 'Noto Sans KR', sans-serif; }
     </style>
 </head>
 <body>
@@ -639,6 +658,11 @@
                 </div>
             </div>
         </div>
+
+        <!-- 오답노트 버튼 -->
+        <button id="wrong-notes-btn" class="wrong-notes-btn" onclick="showWrongNotesView()" style="display:none;">
+            오답노트 <span id="wrong-notes-badge" class="badge">0</span>
+        </button>
 
         <!-- 음성 설정 -->
         <div class="mt-6 pt-5" style="border-top: 1.5px solid #F0ECE6;">
@@ -858,6 +882,20 @@
         <div id="ffeedback" class="text-center h-8 text-base font-bold"></div>
     </div>
 
+    <!-- ══════════════ 오답노트 화면 ══════════════ -->
+    <div id="wn-view" class="wn-view">
+        <div class="wn-header">
+            <h2>오답노트</h2>
+            <p>틀렸던 문제를 다시 풀어봐요</p>
+        </div>
+        <div id="wn-list" class="wn-list"></div>
+        <div id="wn-actions" class="wn-actions">
+            <button class="wn-btn-back" onclick="hideWrongNotesView()">돌아가기</button>
+            <button id="wn-start-btn" class="wn-btn-start" onclick="startWrongNotesPractice()">연습하기</button>
+        </div>
+        <button id="wn-clear-btn" class="wn-btn-clear" onclick="clearWrongNotes()">전체 삭제</button>
+    </div>
+
     <!-- ══════════════ 결과 화면 ══════════════ -->
     <div id="result-view" class="hidden flex flex-col flex-1 fade-in">
         <div class="flex-1 flex flex-col justify-center">
@@ -896,6 +934,7 @@
     let qNum = 1, correct = 0, n1, n2, ans, startTime, busy = false, tries = 0;
     let questionList = [];
     let ttsEnabled = true;
+    let isWrongNotesPractice = false;
     let impulsePrevention = true;
     let impulseDelay = 5;
     let impulseMode = 'hide'; // 'hide' = 보기 확인, 'lock' = 선택 잠금
@@ -1000,10 +1039,11 @@
         [n1, n2] = questionList[qNum - 1];
         ans = n1 + n2;
 
+        const totalQ = questionList.length;
         document.getElementById('n1').textContent       = n1;
         document.getElementById('n2').textContent       = n2;
-        document.getElementById('q-label').textContent  = `문제 ${qNum} / 10`;
-        document.getElementById('progress').style.width = `${qNum / 10 * 100}%`;
+        document.getElementById('q-label').textContent  = `문제 ${qNum} / ${totalQ}`;
+        document.getElementById('progress').style.width = `${qNum / totalQ * 100}%`;
         document.getElementById('feedback').textContent = '';
         document.getElementById('feedback').className   = 'text-center h-8 text-base font-bold';
         document.getElementById('answer-dots').innerHTML = '';
@@ -1088,7 +1128,12 @@
             const revBtn = document.getElementById('revealBtn');
             if (revBtn) revBtn.remove();
             document.getElementById('options').classList.remove('chips-hidden', 'chips-locked');
-            if (tries === 1) { correct++; document.getElementById('score').textContent = correct; }
+            if (tries === 1) {
+                correct++; document.getElementById('score').textContent = correct;
+                if (isWrongNotesPractice) removeWrongNote(n1, n2);
+            } else {
+                addWrongNote(n1, n2, ans);
+            }
             document.querySelectorAll('#options button').forEach(b => {
                 b.disabled = true; b.style.cursor = 'default'; b.style.opacity = '';
             });
@@ -1100,8 +1145,9 @@
             fb.className = 'text-center h-8 text-base font-bold';
             speak('정답이에요.');
             showAnswerDots(ans);
+            const totalQ = questionList.length;
             const nextDelay = ans * 500 + 800;
-            setTimeout(() => { if (qNum < 10) { qNum++; newQuestion(); } else showResult(); }, nextDelay);
+            setTimeout(() => { if (qNum < totalQ) { qNum++; newQuestion(); } else showResult(); }, nextDelay);
         } else {
             btn.disabled = true; btn.classList.add('wrong');
             fb.textContent = '다시 세어봐요!';
@@ -1165,7 +1211,11 @@
 
         if (blueOk && orangeOk && ansOk) {
             busy = true;
-            if (tries === 1) { correct++; document.getElementById('dscore').textContent = correct; }
+            if (tries === 1) {
+                correct++; document.getElementById('dscore').textContent = correct;
+            } else {
+                addWrongNote(n1, n2, ans);
+            }
             document.querySelectorAll('#answer-opts button').forEach(b => b.disabled = true);
             document.querySelectorAll('#blue-drop .zone-dot, #orange-drop .zone-dot')
                 .forEach(d => d.style.pointerEvents = 'none');
@@ -1499,7 +1549,11 @@
         if (blueC === n1 && orangeC === n2) {
             busy = true;
             fillPhase = 'answer';
-            if (tries === 1) { correct++; document.getElementById('fscore').textContent = correct; }
+            if (tries === 1) {
+                correct++; document.getElementById('fscore').textContent = correct;
+            } else {
+                addWrongNote(n1, n2, ans);
+            }
             document.querySelectorAll('#fill-answer-opts button').forEach(b => {
                 b.disabled = true; b.style.cursor = 'default'; b.style.opacity = '';
             });
@@ -1533,17 +1587,20 @@
 
     // ── 공통 ──
     function showResult() {
+        const totalQ = questionList.length;
         const sec = Math.floor((Date.now() - startTime) / 1000);
         document.getElementById('play-view').classList.add('hidden');
         document.getElementById('drag-view').classList.add('hidden');
         document.getElementById('fill-view').classList.add('hidden');
         document.getElementById('result-view').classList.remove('hidden');
-        document.getElementById('r-correct').textContent  = `${correct} / 10`;
-        document.getElementById('r-accuracy').textContent = `${correct * 10}%`;
+        document.getElementById('r-correct').textContent  = `${correct} / ${totalQ}`;
+        document.getElementById('r-accuracy').textContent = `${Math.round(correct / totalQ * 100)}%`;
         document.getElementById('r-time').textContent     = `${sec}초`;
         document.getElementById('r-emoji').textContent    =
-            correct >= 9 ? '🏆' : correct >= 7 ? '🎉' : correct >= 5 ? '😊' : '💪';
+            correct >= totalQ - 1 ? '🏆' : correct >= totalQ * 0.7 ? '🎉' : correct >= totalQ * 0.5 ? '😊' : '💪';
         speak(`다 풀었어요. ${correct}개 맞혔어요.`);
+        isWrongNotesPractice = false;
+        updateWrongNotesBadge();
     }
 
     function startGame(mode, range) {
@@ -1578,11 +1635,14 @@
             el.classList.remove('chips-hidden', 'chips-locked');
         });
         if (floatingEl) { floatingEl.remove(); floatingEl = null; }
+        isWrongNotesPractice = false;
         document.getElementById('result-view').classList.add('hidden');
         document.getElementById('play-view').classList.add('hidden');
         document.getElementById('drag-view').classList.add('hidden');
         document.getElementById('fill-view').classList.add('hidden');
+        document.getElementById('wn-view').classList.remove('active');
         document.getElementById('start-view').classList.remove('hidden');
+        updateWrongNotesBadge();
     }
 
     function toggleTTS() {
@@ -1681,10 +1741,119 @@
         document.getElementById('login-view').classList.remove('hidden');
     }
 
+    // ── 오답노트 ──
+    function getWrongNotes() {
+        try {
+            return JSON.parse(localStorage.getItem('slowmath_circle_wrong_notes')) || [];
+        } catch(e) { return []; }
+    }
+
+    function saveWrongNotes(notes) {
+        localStorage.setItem('slowmath_circle_wrong_notes', JSON.stringify(notes));
+    }
+
+    function addWrongNote(a, b, answer) {
+        if (isWrongNotesPractice) return;
+        const notes = getWrongNotes();
+        const exists = notes.some(n => n.n1 === a && n.n2 === b);
+        if (!exists) {
+            notes.push({ n1: a, n2: b, answer: answer });
+            saveWrongNotes(notes);
+        }
+        updateWrongNotesBadge();
+    }
+
+    function removeWrongNote(a, b) {
+        let notes = getWrongNotes();
+        notes = notes.filter(n => !(n.n1 === a && n.n2 === b));
+        saveWrongNotes(notes);
+        updateWrongNotesBadge();
+    }
+
+    function updateWrongNotesBadge() {
+        const notes = getWrongNotes();
+        const btn = document.getElementById('wrong-notes-btn');
+        const badge = document.getElementById('wrong-notes-badge');
+        if (notes.length > 0) {
+            btn.style.display = 'flex';
+            badge.textContent = notes.length;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function showWrongNotesView() {
+        document.getElementById('start-view').classList.add('hidden');
+        const wnView = document.getElementById('wn-view');
+        wnView.classList.add('active');
+        renderWrongNotesList();
+    }
+
+    function hideWrongNotesView() {
+        document.getElementById('wn-view').classList.remove('active');
+        document.getElementById('start-view').classList.remove('hidden');
+    }
+
+    function renderWrongNotesList() {
+        const notes = getWrongNotes();
+        const list = document.getElementById('wn-list');
+        const startBtn = document.getElementById('wn-start-btn');
+        const clearBtn = document.getElementById('wn-clear-btn');
+        list.innerHTML = '';
+        if (notes.length === 0) {
+            list.innerHTML = '<p class="wn-empty">틀린 문제가 없어요!</p>';
+            startBtn.style.display = 'none';
+            clearBtn.style.display = 'none';
+        } else {
+            startBtn.style.display = '';
+            clearBtn.style.display = '';
+            notes.forEach(n => {
+                const chip = document.createElement('span');
+                chip.className = 'wn-chip';
+                chip.textContent = `${n.n1} + ${n.n2} = ?`;
+                list.appendChild(chip);
+            });
+        }
+    }
+
+    function clearWrongNotes() {
+        saveWrongNotes([]);
+        updateWrongNotesBadge();
+        renderWrongNotesList();
+    }
+
+    function startWrongNotesPractice() {
+        const notes = getWrongNotes();
+        if (notes.length === 0) return;
+        isWrongNotesPractice = true;
+        gameMode = 'select';
+
+        // Shuffle and pick up to 10
+        const shuffled = [...notes].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 10);
+
+        questionList = selected.map(n => [n.n1, n.n2]);
+        // Determine maxNum from the notes for option generation
+        maxNum = Math.max(5, ...selected.map(n => Math.max(n.n1, n.n2)));
+
+        qNum = 1; correct = 0; startTime = Date.now();
+
+        document.getElementById('wn-view').classList.remove('active');
+        document.getElementById('start-view').classList.add('hidden');
+        document.getElementById('result-view').classList.add('hidden');
+        document.getElementById('score').textContent = 0;
+        document.getElementById('play-view').classList.remove('hidden');
+
+        if (window.speechSynthesis) speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+        setTimeout(() => speak('오답노트 연습을 시작해요.'), 100);
+        newQuestion();
+    }
+
     // Check login state on load
     (function checkLoginState() {
         loadSettings();
         applySettingsUI();
+        updateWrongNotesBadge();
         var loginData = localStorage.getItem('slowmath_circle_login');
         if (loginData) {
             document.getElementById('login-view').classList.add('hidden');
