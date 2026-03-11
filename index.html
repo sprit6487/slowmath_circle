@@ -78,24 +78,30 @@
 
         /* ── 쌓기 모드: 소스 dot ── */
         .source-dot {
-            width: 28px; height: 28px; border-radius: 50%;
+            width: 22px; height: 22px; border-radius: 50%;
             cursor: grab; touch-action: none; user-select: none;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             transition: transform 0.1s, opacity 0.15s;
         }
         .source-dot:active { cursor: grabbing; transform: scale(1.12); }
+        @media (min-width: 400px) {
+            .source-dot { width: 26px; height: 26px; }
+        }
         @media (min-width: 768px) {
             .source-dot { width: 32px; height: 32px; }
         }
 
         /* ── 쌓기 모드: 존 dot ── */
         .zone-dot {
-            width: 24px; height: 24px; border-radius: 50%;
+            width: 18px; height: 18px; border-radius: 50%;
             cursor: grab; touch-action: none; user-select: none;
             box-shadow: 0 1px 4px rgba(0,0,0,0.08);
             transition: transform 0.12s, opacity 0.15s;
         }
         .zone-dot:active { cursor: grabbing; transform: scale(1.12); }
+        @media (min-width: 400px) {
+            .zone-dot { width: 22px; height: 22px; }
+        }
         @media (min-width: 768px) {
             .zone-dot { width: 28px; height: 28px; }
         }
@@ -104,9 +110,12 @@
         .drop-zone {
             min-height: 80px; border: 2.5px dashed;
             border-radius: 16px; padding: 8px;
-            display: grid; grid-template-columns: repeat(5, 24px); gap: 4px;
+            display: grid; grid-template-columns: repeat(5, 20px); gap: 3px;
             align-content: start; justify-content: center;
             transition: background 0.18s, border-color 0.18s;
+        }
+        @media (min-width: 400px) {
+            .drop-zone { grid-template-columns: repeat(5, 24px); gap: 4px; }
         }
         .drop-zone.blue-zone { border-color: #B8D9F5; background: #F5FAFF; }
         .drop-zone.orange-zone { border-color: #F5D5A8; background: #FFFAF2; }
@@ -827,10 +836,10 @@
         <p class="text-center text-xs mb-3" style="color:#D0C8BC;">끌어다 색깔에 맞는 칸에 넣어요 · 끌어서 제거</p>
 
         <!-- 소스 트레이 -->
-        <div class="rounded-2xl py-3 px-3 mb-4 flex items-center justify-center gap-3 border-2" style="background:#FDFCFA; border-color:#F0ECE6;">
-            <div id="blue-source" style="display:grid; grid-template-columns:repeat(5, 28px); gap:5px;"></div>
+        <div class="rounded-2xl py-3 px-2 mb-4 flex items-center justify-center gap-2 border-2" style="background:#FDFCFA; border-color:#F0ECE6;">
+            <div id="blue-source" style="display:grid; grid-template-columns:repeat(5, 24px); gap:4px;"></div>
             <div style="width:1.5px; background:#E8E2DA; align-self:stretch; min-height:24px;"></div>
-            <div id="orange-source" style="display:grid; grid-template-columns:repeat(5, 28px); gap:5px;"></div>
+            <div id="orange-source" style="display:grid; grid-template-columns:repeat(5, 24px); gap:4px;"></div>
         </div>
 
         <!-- 정답 선택지 -->
