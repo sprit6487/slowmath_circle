@@ -65,8 +65,12 @@
 
         /* ── 고르기 모드 dots ── */
         .dot { border-radius: 50%; }
-        .dot-sm { width: 16px; height: 16px; }
-        .dot-md { width: 20px; height: 20px; }
+        .dot-sm { width: 12px; height: 12px; }
+        .dot-md { width: 16px; height: 16px; }
+        @media (min-width: 400px) {
+            .dot-sm { width: 14px; height: 14px; }
+            .dot-md { width: 18px; height: 18px; }
+        }
         @media (min-width: 768px) {
             .dot-sm { width: 20px; height: 20px; }
             .dot-md { width: 24px; height: 24px; }
@@ -358,9 +362,12 @@
             100% { transform: scale(1); opacity: 1; }
         }
         .answer-dot {
-            width: 22px; height: 22px; border-radius: 50%;
+            width: 16px; height: 16px; border-radius: 50%;
             opacity: 0;
             animation: popIn 0.4s ease-out forwards;
+        }
+        @media (min-width: 400px) {
+            .answer-dot { width: 18px; height: 18px; }
         }
         @media (min-width: 768px) {
             .answer-dot { width: 26px; height: 26px; }
@@ -746,24 +753,24 @@
 
         <!-- 수식 + 동그라미 -->
         <div class="flex-1 flex flex-col justify-center">
-            <div class="flex items-start justify-center gap-4 mb-8" style="padding-top:8px;">
-                <div class="flex flex-col items-center" style="min-width:68px;">
+            <div class="flex items-start justify-center gap-2 mb-8" style="padding:8px 4px 0;">
+                <div class="flex flex-col items-center" style="min-width:0; flex:1; max-width:120px;">
                     <span id="n1" class="eq-num" style="color:#6BADE8;">1</span>
-                    <div id="dots1" class="mt-3" style="display:grid; grid-template-columns:repeat(5, 18px); gap:4px; min-height:22px;"></div>
+                    <div id="dots1" class="mt-2" style="display:grid; grid-template-columns:repeat(5, 14px); gap:3px; min-height:16px; justify-content:center;"></div>
                 </div>
-                <div class="flex flex-col items-center pt-2">
+                <div class="flex flex-col items-center pt-2 flex-shrink-0">
                     <span class="eq-op">+</span>
                 </div>
-                <div class="flex flex-col items-center" style="min-width:68px;">
+                <div class="flex flex-col items-center" style="min-width:0; flex:1; max-width:120px;">
                     <span id="n2" class="eq-num" style="color:#F0A050;">1</span>
-                    <div id="dots2" class="mt-3" style="display:grid; grid-template-columns:repeat(5, 18px); gap:4px; min-height:22px;"></div>
+                    <div id="dots2" class="mt-2" style="display:grid; grid-template-columns:repeat(5, 14px); gap:3px; min-height:16px; justify-content:center;"></div>
                 </div>
-                <div class="flex flex-col items-center pt-2">
+                <div class="flex flex-col items-center pt-2 flex-shrink-0">
                     <span class="eq-op">=</span>
                 </div>
-                <div class="flex flex-col items-center" style="min-width:68px;">
+                <div class="flex flex-col items-center" style="min-width:0; flex:1; max-width:140px;">
                     <span id="pans" class="eq-num" style="color:#D8D2C8;">?</span>
-                    <div id="answer-dots" class="mt-3" style="display:grid; grid-template-columns:repeat(5, 24px); gap:5px; min-height:26px; justify-content:center;"></div>
+                    <div id="answer-dots" class="mt-2" style="display:grid; grid-template-columns:repeat(5, 18px); gap:3px; min-height:20px; justify-content:center;"></div>
                 </div>
             </div>
 
