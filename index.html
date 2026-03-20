@@ -297,7 +297,7 @@
 
         /* ── 충동방지 초 선택 ── */
         .imp-sec {
-            flex: 0 0 calc((100% - 16px) / 5); padding: 8px 0;
+            padding: 8px 0;
             font-size: 0.75rem; font-weight: 600;
             border-radius: 10px; border: 2px solid #E8E2DA;
             background: white; color: #8C8070;
@@ -782,7 +782,7 @@
                         <span class="impulse-mode-desc">N초 동안 선택할 수 없어요</span>
                     </button>
                 </div>
-                <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center;" id="impulse-delay-row">
+                <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px;" id="impulse-delay-row">
                     <button onclick="setImpulseDelay(1)" class="imp-sec">1초</button>
                     <button onclick="setImpulseDelay(2)" class="imp-sec">2초</button>
                     <button onclick="setImpulseDelay(3)" class="imp-sec">3초</button>
