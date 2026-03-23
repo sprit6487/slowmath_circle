@@ -548,6 +548,8 @@
     .splash-subtitle { color: #B8B0A8; font-size: 0.8rem; font-weight: 500; margin-bottom: 48px; }
     @keyframes splashFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
     @media (min-width:768px) { .splash-title{font-size:1.8rem} .splash-subtitle{font-size:0.9rem} }
+  .btn-next-q { display: block; width: 100%; max-width: 360px; margin: 12px auto 0; padding: 14px 0; border-radius: 16px; border: none; background: #4A4035; color: white; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(74,64,53,0.15); }
+  .btn-next-q:active { transform: scale(0.98); background: #2E261D; }
 </style>
 </head>
 <body>
@@ -887,6 +889,7 @@
 
         <!-- 피드백 -->
         <div id="feedback" class="text-center h-8 text-base font-bold" style="color:#4A4035;"></div>
+        <button class="btn-next-q" id="next-q-btn" style="display:none;" onclick="onNextQ()">다음 문제 →</button>
     </div>
 
     <!-- ══════════════ 쌓기 화면 ══════════════ -->
@@ -945,6 +948,7 @@
 
         <!-- 피드백 -->
         <div id="dfeedback" class="text-center h-8 text-base font-bold"></div>
+        <button class="btn-next-q" id="dnext-q-btn" style="display:none;" onclick="onDNextQ()">다음 문제 →</button>
     </div>
 
     <!-- ══════════════ 채우기 화면 ══════════════ -->
@@ -994,6 +998,7 @@
 
         <!-- 피드백 -->
         <div id="ffeedback" class="text-center h-8 text-base font-bold"></div>
+        <button class="btn-next-q" id="fnext-q-btn" style="display:none;" onclick="onFNextQ()">다음 문제 →</button>
     </div>
 
     <!-- ══════════════ 오답노트 화면 ══════════════ -->
@@ -1048,6 +1053,7 @@
     let qNum = 1, correct = 0, n1, n2, ans, startTime, busy = false, tries = 0;
     let questionList = [];
     let ttsEnabled = true;
+    let nextQBtn_action = null;
     let isWrongNotesPractice = false;
     let impulsePrevention = true;
     let impulseDelay = 5;
@@ -1147,6 +1153,7 @@
     }
 
     function newQuestion() {
+        document.getElementById('next-q-btn').style.display='none';
         if (impulseTimer) { clearInterval(impulseTimer); impulseTimer = null; }
         const oldReveal = document.getElementById('revealBtn');
         if (oldReveal) oldReveal.remove();
@@ -1261,8 +1268,8 @@
             speak('정답이에요.');
             showAnswerDots(ans);
             const totalQ = questionList.length;
-            const nextDelay = ans * 500 + 800;
-            setTimeout(() => { if (qNum < totalQ) { qNum++; newQuestion(); } else showResult(); }, nextDelay);
+            nextQBtn_action = () => { if (qNum < questionList.length) { qNum++; newQuestion(); } else showResult(); };
+            document.getElementById('next-q-btn').style.display = '';
         } else {
             btn.disabled = true; btn.classList.add('wrong');
             fb.textContent = '다시 세어봐요!';
@@ -1274,6 +1281,7 @@
 
     // ── 쌓기 모드 ──
     function newDragQuestion() {
+        document.getElementById('dnext-q-btn').style.display='none';
         busy = false; tries = 0;
         blueCount = 0; orangeCount = 0;
         [n1, n2] = questionList[qNum - 1];
@@ -1342,7 +1350,8 @@
             fb.style.color = '#5BC886';
             fb.className = 'text-center h-8 text-base font-bold';
             speak(`정답이에요. 모두 ${ans}개예요.`);
-            setTimeout(() => { if (qNum < 10) { qNum++; newDragQuestion(); } else showResult(); }, 1600);
+            nextQBtn_action = () => { if (qNum < 10) { qNum++; newDragQuestion(); } else showResult(); };
+            document.getElementById('dnext-q-btn').style.display = '';
         } else {
             const errors = [];
             if (!blueOk) errors.push('파란 동그라미 개수');
@@ -1534,6 +1543,7 @@
 
     // ── 채우기 모드 ──
     function newFillQuestion() {
+        document.getElementById('fnext-q-btn').style.display='none';
         busy = false; tries = 0;
         fillPhase = 'fill';
         activeColor = null;
@@ -1681,7 +1691,8 @@
             fb.style.color = '#5BC886';
             fb.className = 'text-center h-8 text-base font-bold';
             speak('정답이에요.');
-            setTimeout(() => { if (qNum < 10) { qNum++; newFillQuestion(); } else showResult(); }, 1300);
+            nextQBtn_action = () => { if (qNum < 10) { qNum++; newFillQuestion(); } else showResult(); };
+            document.getElementById('fnext-q-btn').style.display = '';
         } else {
             fb.textContent = '동그라미를 다시 확인해봐요!';
             fb.style.color = '#F07070';
@@ -1699,6 +1710,10 @@
     document.addEventListener('touchend', e => {
         if (floatingEl) { const t = e.changedTouches[0]; endDrag(t.clientX, t.clientY); }
     });
+
+    function onNextQ() { document.getElementById('next-q-btn').style.display='none'; if(nextQBtn_action){nextQBtn_action();nextQBtn_action=null;} }
+    function onDNextQ() { document.getElementById('dnext-q-btn').style.display='none'; if(nextQBtn_action){nextQBtn_action();nextQBtn_action=null;} }
+    function onFNextQ() { document.getElementById('fnext-q-btn').style.display='none'; if(nextQBtn_action){nextQBtn_action();nextQBtn_action=null;} }
 
     // ── 공통 ──
     function showResult() {
