@@ -1880,7 +1880,7 @@ setTimeout(function() {
             provider: provider,
             loginTime: new Date().toISOString()
         }));
-        const _sp=sessionStorage.getItem('_sp');if(_sp){sessionStorage.removeItem('_sp');startGame(...JSON.parse(_sp));return;}
+        const _sp=sessionStorage.getItem('_sp');if(_sp){sessionStorage.removeItem('_sp');document.getElementById('login-view').classList.add('hidden');document.querySelector('.logout-btn').style.display='';startGame(...JSON.parse(_sp));return;}
         document.getElementById('login-view').classList.add('hidden');
         document.getElementById('start-view').classList.remove('hidden');
         document.querySelector('.logout-btn').style.display=localStorage.getItem('slowmath_circle_login')?'':'none';
